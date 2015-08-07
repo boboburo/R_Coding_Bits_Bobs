@@ -1,0 +1,94 @@
+---
+title: "GroupBy with dplyr & data.table"
+author: "Brian"
+date: "7 August 2015"
+output: html_document
+---
+
+Illustration of two alternative methods of applying groupBy and calculating a function to a data.frame or data.table of 1 million rows across 5 columns. 
+
+### Load the libraries and check the versions
+
+```{r,warning=FALSE,message=FALSE}
+library(dplyr)
+packageVersion("dplyr")   #0.4.2 on 07/Aug/2015
+library(data.table)
+packageVersion("data.table") #1.9.4 on 07/Aug/2015
+```
+
+
+
+### Create the data
+
+Create a data.table with 5 million entries. 
+```{r}
+dt <- data.table(colA=sample(1:500,    1000000, replace=T), 
+			    colB=sample(501:1000, 1000000, replace=T), 
+			    colC=sample(1:1000,   1000000, replace=T), 
+			    colD=sample(1:100,    1000000, replace=T), 
+			    grp=sample(c("G1","G2","G3","G4","G5"), 1000000, replace=T))
+
+#LETTERS[1:5]  nice way of getting a sample of letters.
+
+sum(!is.na(dt))
+```
+
+### Group with dplyr one column only
+
+```{r}
+#this summarises one variable only
+system.time(group1<-dt %>% group_by(grp) %>% summarise(mean(colA)))
+object.size(group1)
+group1
+```
+
+### Group with dplyr all columns
+ 
+dplyr provides the *summarise_each* method. Have to be all same type. Is it possible to control this with an apply? 
+ 
+```{r}
+#this summarises one variable only
+system.time(group2<-dt %>% group_by(grp) %>% summarise_each(funs(mean)))
+object.size(group2)
+group2
+```
+ 
+### Group with data.table on all columns
+
+The format of data.table is 
+
+```{r}
+#this summarises all the variables
+system.time(group3<-dt[, lapply(.SD, mean), by = grp])
+object.size(group3)
+group3
+```
+
+### Some neat data.table
+
+General form: DT[i, j, by] *"Take DT, subset rows using i, then calculate j grouped by by”* - taken from the DataCamp CheatSheet. 
+
+.SD is a data.table and holds all the values of all columns, except the one specified in by. It reduces programming time but keeps readability. .SD is only accessible in j.
+
+```{r,eval=FALSE}
+#Wide and ordered
+dt[order(colA), lapply(.SD,mean), by = grp]
+
+#Long and un-ordered as there is no colA
+dt[order(colA), sapply(.SD,mean), by = grp]
+
+#Specify columns and functions. .N is the total number of observations per group
+dt[, .("thesum"=sum(colA),"themean"=mean(colB),.N), by = grp]
+
+#update the columns
+dt[, c("colE","colB") := list(round(exp(colC),2), c(1:10))]
+head(dt)
+
+#removes the column
+dt[, colA := NULL] 
+head(dt)
+#remove muliple columns
+dt[, c("colE","colB") := NULL] 
+
+
+```
