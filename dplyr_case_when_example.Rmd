@@ -1,0 +1,62 @@
+---
+title: "Dplyr Case When"
+author: "Brian"
+date: "10/3/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(hrbrthemes)
+library(ggalt)
+library(readr)
+```
+
+## Introduction
+
+Taken from the rud.is blog, example of case_when for string match and factor creation
+
+```{r grabdata}
+os <- readr::read_lines("https://rud.is/dl/os.txt", na = "NA")
+```
+
+```{r}
+ELSE <- TRUE
+
+case_when(
+  grepl("Windows", os) ~ "Windows~ish",
+  grepl("Red Hat|CentOS|Fedora", os) ~ "Fedora-ish",
+  grepl("Ubuntu|Debian", os) ~ "Debian-ish",
+  grepl("CoreOS|Amazeon", os) ~ "Amazon-ish",
+  is.na(os) ~ "Unknown",
+  ELSE  ~ "Other"
+        
+) %>%
+  table() %>%
+  as_data_frame() %>%
+  setNames(c("os","node.count")) %>%
+  arrange(node.count) %>%
+  mutate(os = factor(os, os)) %>% # os = as.factor(os) - destroys the order? 
+  ggplot(aes(node.count, os)) + 
+  geom_lollipop(horizontal = T, size = 1.5, color ="#54278f") +
+  scale_x_comma(limits = c(0,300)) +
+  labs(y=NULL, title = "Os Types") +
+  theme_ipsum(grid="X")
+
+
+
+```
+
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

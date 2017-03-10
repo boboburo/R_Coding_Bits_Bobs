@@ -1,0 +1,102 @@
+---
+title: "Apply Fun"
+output: html_notebook
+---
+
+http://stackoverflow.com/questions/3505701/r-grouping-functions-sapply-vs-lapply-vs-apply-vs-tapply-vs-by-vs-aggrega
+
+Quick little notebook showing the difference between **lapply, sapply, apply, tapply, mapply**
+
+## lapply
+
+Loop over list of objects and perform some function on each element. *lapply* tkaes 3 argumnets 
+
+- list
+- function 
+- ... arguments for the function
+
+```{r}
+x1 <- list(a=1:5, b = rnorm(10))
+x2 <- list(a = 1:5, b = append(rnorm(6),c(NA,NA)))
+print(x1)
+print(x2)
+```
+
+```{r}
+lapply(x1,mean)
+lapply(x2,mean)
+lapply(x2,mean,na.rm=T)
+```
+
+
+### Annonymous Functions
+
+```{r}
+x <- 1:4
+#Uniform distributions
+lapply(x, runif, min =0, max=100)
+```
+
+
+```{r}
+#Annonymouse functions always return the first leement
+lapply(x,function(squarit) squarit[[1]]*x)
+```
+
+## Apply
+
+*apply* evalutes a function over an array or matrices
+
+```{r}
+str(lapply) #just function
+str(apply)  #array, integer vector for what margin to keep
+```
+
+```{r}
+x <- matrix(rnorm(200),20,10) #matrix 20 rows, 10 cols
+```
+
+
+```{r}
+rowSums <- apply(x,1,sum)
+colSums <- apply(x,2,sum)
+```
+
+
+## Tapply
+
+```{r}
+str(tapply) #vector, vector of same length, groups, ,funciton, simplify = TRUE like sapply, FALSE get
+#a list of values returned
+
+
+
+```
+
+Lets look at mtcars
+
+```{r}
+#lapply( split(x,f), mean) - same as tapply
+s<-split(mtcars,mtcars$cyl)
+lapply(s,function(x) colMeans(x[, c("mpg","disp")]))
+
+```
+
+```{r}
+tapply(mtcars,cyl,function(x) colMeans(x[, c("mpg","disp")]) )
+```
+
+
+
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).
