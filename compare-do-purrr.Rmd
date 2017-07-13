@@ -1,0 +1,119 @@
+---
+title: "Compare do and purrr"
+author: "Brian Carter"
+date: "July 13, 2017"
+output: html_document
+---
+
+# Intro
+
+Compare the function of using do and purrr
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+library(broom)
+library(purrr)
+library(tidyr)
+
+```
+
+## Cars lm Example
+
+```{r cars.do}
+mtcars %>%
+  group_by(am) %>%
+  do(tidy(lm(mpg ~ wt, data = .)))
+```
+
+
+```{r cars.purr}
+glance_rsq <- function(model){
+  tryCatch(
+    glance(model)$r.squared,
+    error = function(e) { NA}
+  )
+}
+
+res <- mtcars %>%
+  group_by(am) %>%
+  nest() %>%
+  mutate(model = purrr::map(data, ~ lm(mpg ~ wt, data = .)),
+         model.rsq = purrr::map_dbl(model, glance_rsq),
+         model.par = purrr::map(model, tidy))
+
+res %>% select(model.par) %>% unnest()
+```
+
+
+## Stats Model Example
+
+```{r}
+pop.mean = 0.10
+
+df = data.frame( 
+  trial    = as.integer(runif(1000, min = 5, max = 20)),
+  success  = as.integer(runif(1000, min = 0, max = 20)),
+  my.group = factor(rep(c("a","b","c","d"), each = 250))
+)
+```
+
+```{r stats.do}
+res <- df %>% 
+          group_by(my.group) %>%
+          do(test = binom.test(sum(.$success),
+                   sum(.$trial),
+                   pop.mean,
+                   alternative = c("two.sided"),
+                   conf.level = 0.95))
+```
+
+
+ 
+```{r stat.do.broom}
+res <- df %>%
+           group_by(my.group) %>%
+           do(test = tidy(binom.test(sum(.$success),
+                   sum(.$trial),
+                   pop.mean,
+                   alternative = c("two.sided"),
+                   conf.level = 0.95))) #have list of data.frames
+
+#Bind is from dplyr
+res$test %>% bind_rows %>%
+  bind_cols(res[1],.)
+```
+
+
+
+```{r stats.purrr}
+
+res <- df %>%
+  group_by(my.group)
+
+res <- df %>%
+  group_by(my.group) %>%
+  nest() %>%
+  mutate(succes = map_dbl(.$succes, sum))
+
+library(dplyr)
+library(tidyr)
+library(broom)
+library(purr)
+
+res <- df %>%
+  group_by(my.group) %>%
+  tidyr::nest() %>%
+  mutate(bi.test = 
+           purrr::map(data, function(df) broom::tidy(
+             binom.test(sum(df$success),
+                        sum(df$trial),
+                        pop.mean,
+                        alternative = c("two.sided"),
+                        conf.level = 0.95)))) %>%
+  select(my.group, bi.test) %>%
+  tidyr::unnest()
+```
+         
